@@ -1,4 +1,6 @@
 ﻿using CetTodoApp.Data;
+using System.Globalization;
+using Microsoft.Maui.Controls;
 
 namespace CetTodoApp;
 
@@ -9,20 +11,29 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
-        FakeDb.AddToDo("Test1" ,DateTime.Now.AddDays(-1));
-        FakeDb.AddToDo("Test2" ,DateTime.Now.AddDays(1));
-        FakeDb.AddToDo("Test3" ,DateTime.Now);
+        FakeDb.AddToDo("dün" ,DateTime.Now.AddDays(-1));
+        FakeDb.AddToDo("yarın" ,DateTime.Now.AddDays(1));
+        FakeDb.AddToDo("bugün" ,DateTime.Now);
         RefreshListView();
-        ;
-
-
     }
 
 
     private void AddButton_OnClicked(object? sender, EventArgs e)
     {
-        FakeDb.AddToDo(Title.Text, DueDate.Date);
-        Title.Text = string.Empty;
+        if (string.IsNullOrWhiteSpace(TitleEntry.Text))
+        {
+            DisplayAlert("HATA", "Başlık boş olamaz!", "OK");
+            return;
+        }
+
+        if (DueDate.Date < DateTime.Today)
+        {
+            DisplayAlert("HATA", "Bitiş tarihi bugüden önce olamaz!", "OK");
+            return;
+        }
+
+        FakeDb.AddToDo(TitleEntry.Text, DueDate.Date);
+        TitleEntry.Text = string.Empty;
         DueDate.Date=DateTime.Now;
         RefreshListView();
     }
@@ -33,6 +44,8 @@ public partial class MainPage : ContentPage
         TasksListView.ItemsSource = FakeDb.Data.Where(x => !x.IsComplete ||
                                                            (x.IsComplete && x.DueDate > DateTime.Now.AddDays(-1)))
             .ToList();
+
+        
     }
 
     private void TasksListView_OnItemSelected(object? sender, SelectedItemChangedEventArgs e)
