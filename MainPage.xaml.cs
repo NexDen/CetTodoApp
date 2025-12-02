@@ -1,58 +1,53 @@
 ﻿using CetTodoApp.Data;
-using System.Globalization;
-using Microsoft.Maui.Controls;
 
 namespace CetTodoApp;
 
 public partial class MainPage : ContentPage
 {
-   
-
     public MainPage()
     {
         InitializeComponent();
-        FakeDb.AddToDo("dün" ,DateTime.Now.AddDays(-1));
-        FakeDb.AddToDo("yarın" ,DateTime.Now.AddDays(1));
-        FakeDb.AddToDo("bugün" ,DateTime.Now);
         RefreshListView();
     }
+    private ToDoDB db = new ToDoDB();
 
 
-    private void AddButton_OnClicked(object? sender, EventArgs e)
+
+    private async void AddButton_OnClicked(object? sender, EventArgs e)
     {
         if (string.IsNullOrWhiteSpace(TitleEntry.Text))
         {
-            DisplayAlert("HATA", "Başlık boş olamaz!", "OK");
+            await DisplayAlert("HATA", "Başlık boş olamaz!", "OK");
             return;
         }
 
         if (DueDate.Date < DateTime.Today)
         {
-            DisplayAlert("HATA", "Bitiş tarihi bugüden önce olamaz!", "OK");
+            await DisplayAlert("HATA", "Bitiş tarihi bugüden önce olamaz!", "OK");
             return;
         }
 
-        FakeDb.AddToDo(TitleEntry.Text, DueDate.Date);
+        await db.Create(new TodoItem{
+            Title = TitleEntry.Text,
+            DueDate = DueDate.Date
+        });
         TitleEntry.Text = string.Empty;
         DueDate.Date=DateTime.Now;
         RefreshListView();
     }
 
-    private void RefreshListView()
+    private async void RefreshListView()
     {
         TasksListView.ItemsSource = null;
-        TasksListView.ItemsSource = FakeDb.Data.Where(x => !x.IsComplete ||
-                                                           (x.IsComplete && x.DueDate > DateTime.Now.AddDays(-1)))
-            .ToList();
-
-        
+        TasksListView.ItemsSource = await db.GetAllAsync();
     }
 
-    private void TasksListView_OnItemSelected(object? sender, SelectedItemChangedEventArgs e)
+    private async void TasksListView_OnItemSelected(object? sender, SelectedItemChangedEventArgs e)
     {
         var item = e.SelectedItem as TodoItem;
-       FakeDb.ChageCompletionStatus(item);
-       RefreshListView();
+        item.IsComplete = !item.IsComplete;
+        await db.Update(item);
+        RefreshListView();
        
     }
 }
